@@ -1,10 +1,9 @@
-const url = 'https://793ac23c6757.au.ngrok.io/';
-
+const url = 'https://bb862337bf8d.au.ngrok.io/';
+var fbuser;
 var player;
 var game;
 var loadingProgress = { loaded: 0, count: 0 };
 var poops = 5;
-
 window.onload = function() {
   window.fbAsyncInit = function() {
     FB.init({
@@ -12,13 +11,11 @@ window.onload = function() {
       xfbml: true,
       version: 'v11.0'
     });
-
     // ADD ADDITIONAL FACEBOOK CODE HERE
     FB.login(function(response) {
       statusChangeCallback(response); // handle the response
     });
   };
-
   (function(d, s, id) {
     var js,
       fjs = d.getElementsByTagName(s)[0];
@@ -30,28 +27,16 @@ window.onload = function() {
     js.src = 'https://connect.facebook.net/en_US/sdk.js';
     fjs.parentNode.insertBefore(js, fjs);
   })(document, 'script', 'facebook-jssdk');
-
   renderPoops();
   initialise();
-  // When the window loads, start to initialize the SDK
-  // FBInstant.initializeAsync().then(function() {
-  //   loadImages();
-  // });
 };
-
 function testAPI() {
-  // Testing Graph API after login.  See statusChangeCallback() for when this call is made.
-  console.log('Welcome!  Fetching your information.... ');
-  FB.api(
-    '/me',
-    { fields: ['id', 'name', 'picture.type(large)'] },
-    function(response) {
-      debugger;
-      console.log('Successful login for: ' + response.name);
-      // document.getElementById('status').innerHTML =
-      //   'Thanks for logging in, ' + response.name + '!';
-    }
-  );
+  FB.api('/me', { fields: ['id', 'name', 'picture.type(large)'] }, function(
+    response
+  ) {
+    fbuser = response;
+    getUser(fbuser);
+  });
 }
 function statusChangeCallback(response) {
   // Called with the results from FB.getLoginStatus().
@@ -79,7 +64,6 @@ function renderPoops() {
     );
   }
 }
-
 function loadImages() {
   var images = ['./img/header.png'];
   loadingProgress.count = images.length;
@@ -92,7 +76,6 @@ function loadImages() {
     });
   }
 }
-
 function asyncImageLoader(url) {
   return new Promise((resolve, reject) => {
     var image = new Image();
@@ -101,35 +84,10 @@ function asyncImageLoader(url) {
     image.onerror = () => reject(new Error('could not load image'));
   });
 }
-function updateLoadingScreen() {
-  var progress = (loadingProgress.loaded / loadingProgress.count) * 100;
-  FBInstant.setLoadingProgress(progress);
-  if (progress == 100) {
-    // Now that assets are loaded, call startGameAsync
-    FBInstant.startGameAsync().then(onStart);
-  }
-}
 
-function onStart() {
-  getUser(
-    FBInstant.player.getID(),
-    FBInstant.player.getName(),
-    FBInstant.player.getPhoto()
-  );
-  // This is called when the user has tapped Play
-  // Information from the SDK can now be accessed
-}
-
-function getUser(id, name, imgurl) {
-  encodedURI = encodeURIComponent(imgurl);
-  $.getJSON(
-    url + 'getUser?id=' + id + '&name=' + name + '&imgurl=' + encodedURI,
-    function(data) {
-      handleUser(data);
-      return data;
-    }
-  ).fail(function(response) {
-    console.log('Error: ' + response.responseText);
+function getUser(fbuser) {
+  $.post(url + 'getUser', fbuser).done(function(data) {
+    handleUser(data);
   });
 }
 
@@ -139,13 +97,11 @@ function handleUser(resp) {
   $('.games-lost .value').html(player.gamesLost);
   $('#menu').addClass('active');
 }
-
 function sendRequest(endpoint, data, aFunction) {
   $.post(url + endpoint, data).done(function(resp) {
     aFunction(resp);
   });
 }
-
 function handleNewGame(resp) {
   $('section#newGame').addClass('active');
   game = resp.game;
@@ -163,7 +119,6 @@ function handleNewGame(resp) {
       );
   });
 }
-
 function initialise() {
   $('section')
     .on('transitionstart', function() {})
@@ -172,7 +127,7 @@ function initialise() {
     $('section#menu')
       .removeClass('active')
       .addClass('return');
-    sendRequest('newGame', { id: FBInstant.player.getID() }, handleNewGame);
+    sendRequest('newGame', { id: fbuser.id }, handleNewGame);
   });
   $('.btn-back').click(function() {
     $('section.active').removeClass('active');
